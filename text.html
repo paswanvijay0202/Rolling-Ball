@@ -1,0 +1,2335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Rolling Ball Maze</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: #08111f;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    overflow: hidden;
+}
+
+/* ================= HEADER ================= */
+
+#header {
+    height: 70px;
+    background: linear-gradient(90deg,#071a33,#123c68);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    box-shadow: 0 3px 15px black;
+}
+
+#header h1 {
+    color: #00d9ff;
+    font-size: 25px;
+}
+
+.info {
+    font-size: 17px;
+    font-weight: bold;
+}
+
+/* ================= GAME ================= */
+
+#gameContainer {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 70px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+canvas {
+    background: #101b2c;
+    border: 4px solid #19cfff;
+    border-radius: 12px;
+    box-shadow: 0 0 30px #008cff;
+}
+
+/* ================= MENU ================= */
+
+#menu,
+#levelMenu,
+#completeMenu,
+#gameOver {
+    position: absolute;
+    inset: 0;
+    background: rgba(3,10,20,.94);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+#levelMenu,
+#completeMenu,
+#gameOver {
+    display: none;
+}
+
+.title {
+    font-size: 50px;
+    color: #00d9ff;
+    text-shadow: 0 0 20px #008cff;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    color: #ddd;
+    margin-bottom: 30px;
+}
+
+/* ================= BUTTON ================= */
+
+button {
+    border: none;
+    border-radius: 12px;
+    padding: 13px 30px;
+    margin: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    background: linear-gradient(135deg,#00aaff,#0066ff);
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0,120,255,.4);
+    transition: .2s;
+}
+
+button:hover {
+    transform: scale(1.05);
+}
+
+button:active {
+    transform: scale(.95);
+}
+
+/* ================= LEVEL BUTTONS ================= */
+
+#levels {
+    width: 90%;
+    max-width: 650px;
+    display: grid;
+    grid-template-columns: repeat(5,1fr);
+    gap: 10px;
+}
+
+.levelBtn {
+    margin: 0;
+    padding: 12px 5px;
+    background: #1c4166;
+    font-size: 16px;
+}
+
+.levelBtn.unlocked {
+    background: linear-gradient(135deg,#00c853,#009624);
+}
+
+.levelBtn.locked {
+    background: #222;
+    color: #777;
+    cursor: not-allowed;
+}
+
+/* ================= COMPLETE ================= */
+
+.completeTitle {
+    font-size: 45px;
+    color: #ffd000;
+    text-shadow: 0 0 20px orange;
+}
+
+.starsBig {
+    font-size: 50px;
+    margin: 20px;
+}
+
+/* ================= MOBILE ================= */
+
+#tiltText {
+    position: absolute;
+    bottom: 10px;
+    font-size: 13px;
+    color: #aaa;
+}
+
+@media(max-width:700px) {
+
+    #header {
+        height: 60px;
+    }
+
+    #header h1 {
+        font-size: 17px;
+    }
+
+    .info {
+        font-size: 12px;
+    }
+
+    .title {
+        font-size: 35px;
+    }
+
+    #levels {
+        grid-template-columns: repeat(5,1fr);
+        gap: 5px;
+    }
+
+    .levelBtn {
+        padding: 9px 2px;
+        font-size: 13px;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- ================= HEADER ================= -->
+
+<div id="header">
+
+    <h1>⚡ ROLLING BALL MAZE</h1>
+
+    <div class="info">
+        LEVEL: <span id="levelText">1</span>/30
+    </div>
+
+    <div class="info">
+        ⭐ <span id="starText">0</span>/3
+    </div>
+
+    <div class="info">
+        ❤️ <span id="lifeText">3</span>
+    </div>
+
+    <div class="info">
+        ⏱️ <span id="timeText">0</span>
+    </div>
+
+</div>
+
+
+<!-- ================= GAME ================= -->
+
+<div id="gameContainer">
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="tiltText">
+    📱 Tilt your phone or use Arrow Keys / WASD
+</div>
+
+
+<!-- ================= MAIN MENU ================= -->
+
+<div id="menu">
+
+    <div class="title">
+        ROLLING BALL
+    </div>
+
+    <div class="title">
+        MAZE
+    </div>
+
+    <div class="subtitle">
+        🌀 Roll • ⭐ Collect • 🚩 Escape
+    </div>
+
+    <button onclick="startGame()">
+        ▶ PLAY GAME
+    </button>
+
+    <button onclick="openLevels()">
+        🧩 LEVEL SELECT
+    </button>
+
+</div>
+
+
+<!-- ================= LEVEL MENU ================= -->
+
+<div id="levelMenu">
+
+    <h1 class="title">
+        SELECT LEVEL
+    </h1>
+
+    <p class="subtitle">
+        Complete levels to unlock new mazes
+    </p>
+
+    <div id="levels"></div>
+
+    <button onclick="closeLevels()">
+        ← BACK
+    </button>
+
+</div>
+
+
+<!-- ================= COMPLETE ================= -->
+
+<div id="completeMenu">
+
+    <div class="completeTitle">
+        🎉 LEVEL COMPLETE!
+    </div>
+
+    <div class="starsBig" id="completeStars">
+        ⭐⭐⭐
+    </div>
+
+    <p id="completeScore">
+        Score: 0
+    </p>
+
+    <button onclick="nextLevel()">
+        NEXT LEVEL →
+    </button>
+
+    <button onclick="openLevelsFromGame()">
+        LEVEL SELECT
+    </button>
+
+</div>
+
+
+<!-- ================= GAME OVER ================= -->
+
+<div id="gameOver">
+
+    <div class="completeTitle" style="color:red;">
+        💥 GAME OVER
+    </div>
+
+    <p id="gameOverText">
+        Try again!
+    </p>
+
+    <button onclick="restartLevel()">
+        🔄 RETRY
+    </button>
+
+    <button onclick="showMainMenu()">
+        🏠 MAIN MENU
+    </button>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* =====================================================
+   ROLLING BALL MAZE
+   ===================================================== */
+
+const canvas =
+    document.getElementById("gameCanvas");
+
+const ctx =
+    canvas.getContext("2d");
+
+
+/* ================= GAME VARIABLES ================= */
+
+let currentLevel = 1;
+
+let unlockedLevel =
+    Number(localStorage.getItem("unlockedLevel")) || 1;
+
+let stars = 0;
+
+let lives = 3;
+
+let score = 0;
+
+let levelTime = 0;
+
+let gameRunning = false;
+
+let lastTime = 0;
+
+
+/* ================= BALL ================= */
+
+let ball = {
+
+    x: 0,
+    y: 0,
+
+    radius: 11,
+
+    vx: 0,
+    vy: 0,
+
+    rotation: 0
+
+};
+
+
+/* ================= MAZE ================= */
+
+let maze = [];
+
+let mazeSize = 9;
+
+let cellSize = 45;
+
+
+/* ================= STAR OBJECTS ================= */
+
+let starObjects = [];
+
+
+/* ================= GOAL ================= */
+
+let goal = {
+
+    x: 0,
+    y: 0,
+
+    radius: 15
+
+};
+
+
+/* ================= HAZARDS ================= */
+
+let hazards = [];
+
+
+/* ================= INPUT ================= */
+
+let keys = {
+
+    up: false,
+    down: false,
+    left: false,
+    right: false
+
+};
+
+
+/* =====================================================
+   CANVAS SIZE
+   ===================================================== */
+
+function resizeCanvas() {
+
+    let maxWidth =
+        window.innerWidth - 30;
+
+    let maxHeight =
+        window.innerHeight - 110;
+
+    let size =
+        Math.min(maxWidth,maxHeight);
+
+    canvas.width = size;
+    canvas.height = size;
+
+    cellSize =
+        size / mazeSize;
+}
+
+window.addEventListener(
+    "resize",
+    resizeCanvas
+);
+
+
+/* =====================================================
+   KEYBOARD
+   ===================================================== */
+
+document.addEventListener(
+    "keydown",
+    function(e) {
+
+        if (
+            e.key === "ArrowUp" ||
+            e.key.toLowerCase() === "w"
+        )
+            keys.up = true;
+
+        if (
+            e.key === "ArrowDown" ||
+            e.key.toLowerCase() === "s"
+        )
+            keys.down = true;
+
+        if (
+            e.key === "ArrowLeft" ||
+            e.key.toLowerCase() === "a"
+        )
+            keys.left = true;
+
+        if (
+            e.key === "ArrowRight" ||
+            e.key.toLowerCase() === "d"
+        )
+            keys.right = true;
+
+    }
+);
+
+
+document.addEventListener(
+    "keyup",
+    function(e) {
+
+        if (
+            e.key === "ArrowUp" ||
+            e.key.toLowerCase() === "w"
+        )
+            keys.up = false;
+
+        if (
+            e.key === "ArrowDown" ||
+            e.key.toLowerCase() === "s"
+        )
+            keys.down = false;
+
+        if (
+            e.key === "ArrowLeft" ||
+            e.key.toLowerCase() === "a"
+        )
+            keys.left = false;
+
+        if (
+            e.key === "ArrowRight" ||
+            e.key.toLowerCase() === "d"
+        )
+            keys.right = false;
+
+    }
+);
+
+
+/* =====================================================
+   MOBILE TILT
+   ===================================================== */
+
+let tiltX = 0;
+let tiltY = 0;
+
+window.addEventListener(
+    "deviceorientation",
+    function(event) {
+
+        tiltX =
+            event.gamma || 0;
+
+        tiltY =
+            event.beta || 0;
+
+    }
+);
+
+
+/* =====================================================
+   START GAME
+   ===================================================== */
+
+function startGame() {
+
+    document.getElementById(
+        "menu"
+    ).style.display = "none";
+
+    document.getElementById(
+        "levelMenu"
+    ).style.display = "none";
+
+    loadLevel(currentLevel);
+
+    gameRunning = true;
+
+}
+
+
+/* =====================================================
+   LOAD LEVEL
+   ===================================================== */
+
+function loadLevel(level) {
+
+    currentLevel = level;
+
+    stars = 0;
+
+    lives = 3;
+
+    score = 0;
+
+    levelTime = 0;
+
+    hazards = [];
+
+    starObjects = [];
+
+
+    /* Bigger maze every few levels */
+
+    mazeSize =
+        9 +
+        Math.floor(
+            (level - 1) / 5
+        ) * 2;
+
+
+    resizeCanvas();
+
+
+    /* Generate maze */
+
+    generateMaze();
+
+
+    /* Ball starts at top-left */
+
+    ball.x =
+        cellSize / 2;
+
+    ball.y =
+        cellSize / 2;
+
+    ball.vx = 0;
+
+    ball.vy = 0;
+
+    ball.rotation = 0;
+
+
+    /* Goal at bottom-right */
+
+    goal.x =
+        (mazeSize - 0.5)
+        * cellSize;
+
+    goal.y =
+        (mazeSize - 0.5)
+        * cellSize;
+
+
+    /* Create stars */
+
+    createStars();
+
+
+    /* Add hazards from level 5 */
+
+    if(level >= 5) {
+
+        let count =
+            Math.min(
+                1 +
+                Math.floor(level / 5),
+                6
+            );
+
+        for(let i=0;i<count;i++) {
+
+            hazards.push({
+
+                x:
+                    Math.random()
+                    * canvas.width,
+
+                y:
+                    Math.random()
+                    * canvas.height,
+
+                radius: 10,
+
+                angle:
+                    Math.random()
+                    * Math.PI * 2,
+
+                speed:
+                    1.5 +
+                    level * .08
+
+            });
+
+        }
+
+    }
+
+
+    updateUI();
+
+}
+
+
+/* =====================================================
+   GENERATE MAZE
+   ===================================================== */
+
+function generateMaze() {
+
+    maze = [];
+
+
+    for(let y=0;y<mazeSize;y++) {
+
+        maze[y] = [];
+
+        for(let x=0;x<mazeSize;x++) {
+
+            maze[y][x] = {
+
+                visited:false,
+
+                walls:{
+
+                    top:true,
+                    right:true,
+                    bottom:true,
+                    left:true
+
+                }
+
+            };
+
+        }
+
+    }
+
+
+    /* Depth first maze */
+
+    let stack = [];
+
+    let current = {
+        x:0,
+        y:0
+    };
+
+
+    maze[0][0].visited = true;
+
+    stack.push(current);
+
+
+    while(stack.length > 0) {
+
+        current =
+            stack[
+                stack.length-1
+            ];
+
+
+        let neighbors = [];
+
+
+        /* UP */
+
+        if(
+            current.y > 0 &&
+            !maze[
+                current.y-1
+            ][current.x].visited
+        ) {
+
+            neighbors.push({
+                x:current.x,
+                y:current.y-1,
+                direction:"up"
+            });
+
+        }
+
+
+        /* RIGHT */
+
+        if(
+            current.x <
+            mazeSize-1 &&
+            !maze[
+                current.y
+            ][current.x+1].visited
+        ) {
+
+            neighbors.push({
+                x:current.x+1,
+                y:current.y,
+                direction:"right"
+            });
+
+        }
+
+
+        /* DOWN */
+
+        if(
+            current.y <
+            mazeSize-1 &&
+            !maze[
+                current.y+1
+            ][current.x].visited
+        ) {
+
+            neighbors.push({
+                x:current.x,
+                y:current.y+1,
+                direction:"down"
+            });
+
+        }
+
+
+        /* LEFT */
+
+        if(
+            current.x > 0 &&
+            !maze[
+                current.y
+            ][current.x-1].visited
+        ) {
+
+            neighbors.push({
+                x:current.x-1,
+                y:current.y,
+                direction:"left"
+            });
+
+        }
+
+
+        if(neighbors.length === 0) {
+
+            stack.pop();
+
+        }
+        else {
+
+            let next =
+                neighbors[
+                    Math.floor(
+                        Math.random()
+                        * neighbors.length
+                    )
+                ];
+
+
+            /* Remove walls */
+
+            if(next.direction === "up") {
+
+                maze[
+                    current.y
+                ][
+                    current.x
+                ].walls.top = false;
+
+                maze[
+                    next.y
+                ][
+                    next.x
+                ].walls.bottom = false;
+
+            }
+
+            if(next.direction === "right") {
+
+                maze[
+                    current.y
+                ][
+                    current.x
+                ].walls.right = false;
+
+                maze[
+                    next.y
+                ][
+                    next.x
+                ].walls.left = false;
+
+            }
+
+            if(next.direction === "down") {
+
+                maze[
+                    current.y
+                ][
+                    current.x
+                ].walls.bottom = false;
+
+                maze[
+                    next.y
+                ][
+                    next.x
+                ].walls.top = false;
+
+            }
+
+            if(next.direction === "left") {
+
+                maze[
+                    current.y
+                ][
+                    current.x
+                ].walls.left = false;
+
+                maze[
+                    next.y
+                ][
+                    next.x
+                ].walls.right = false;
+
+            }
+
+
+            maze[
+                next.y
+            ][
+                next.x
+            ].visited = true;
+
+            stack.push({
+
+                x:next.x,
+                y:next.y
+
+            });
+
+        }
+
+    }
+
+}
+
+
+/* =====================================================
+   CREATE STARS
+   ===================================================== */
+
+function createStars() {
+
+    for(let i=0;i<3;i++) {
+
+        let x;
+        let y;
+
+
+        do {
+
+            x =
+                Math.floor(
+                    Math.random()
+                    * mazeSize
+                );
+
+            y =
+                Math.floor(
+                    Math.random()
+                    * mazeSize
+                );
+
+        }
+        while(
+            (x === 0 && y === 0) ||
+            (
+                x === mazeSize-1 &&
+                y === mazeSize-1
+            )
+        );
+
+
+        starObjects.push({
+
+            x:
+                (x+0.5)
+                * cellSize,
+
+            y:
+                (y+0.5)
+                * cellSize,
+
+            collected:false,
+
+            rotation:
+                Math.random()
+                * Math.PI * 2
+
+        });
+
+    }
+
+}
+
+
+/* =====================================================
+   UPDATE GAME
+   ===================================================== */
+
+function update(delta) {
+
+    if(!gameRunning)
+        return;
+
+
+    levelTime += delta;
+
+
+    /* ================= INPUT ================= */
+
+    let ax = 0;
+    let ay = 0;
+
+
+    if(keys.left)
+        ax -= 1;
+
+    if(keys.right)
+        ax += 1;
+
+    if(keys.up)
+        ay -= 1;
+
+    if(keys.down)
+        ay += 1;
+
+
+    /* Mobile tilt */
+
+    if(
+        Math.abs(tiltX) > 2 ||
+        Math.abs(tiltY) > 2
+    ) {
+
+        ax += tiltX / 15;
+
+        ay += tiltY / 15;
+
+    }
+
+
+    /* ================= BALL ================= */
+
+    let acceleration =
+        800 +
+        currentLevel * 8;
+
+
+    ball.vx +=
+        ax *
+        acceleration *
+        delta;
+
+    ball.vy +=
+        ay *
+        acceleration *
+        delta;
+
+
+    /* Friction */
+
+    ball.vx *= .94;
+
+    ball.vy *= .94;
+
+
+    /* Maximum speed */
+
+    let maxSpeed =
+        350 +
+        currentLevel * 4;
+
+
+    let speed =
+        Math.sqrt(
+            ball.vx*ball.vx +
+            ball.vy*ball.vy
+        );
+
+
+    if(speed > maxSpeed) {
+
+        ball.vx =
+            ball.vx / speed
+            * maxSpeed;
+
+        ball.vy =
+            ball.vy / speed
+            * maxSpeed;
+
+    }
+
+
+    /* Move ball */
+
+    let newX =
+        ball.x +
+        ball.vx * delta;
+
+    let newY =
+        ball.y +
+        ball.vy * delta;
+
+
+    /* Wall collision */
+
+    if(!checkWallCollision(
+        ball.x,
+        ball.y,
+        newX,
+        newY
+    )) {
+
+        ball.x = newX;
+
+        ball.y = newY;
+
+    }
+
+
+    /* Ball rotation */
+
+    ball.rotation +=
+        speed *
+        delta *
+        .04;
+
+
+    /* Stars */
+
+    checkStars();
+
+
+    /* Goal */
+
+    checkGoal();
+
+
+    /* Hazards */
+
+    updateHazards(delta);
+
+
+    updateUI();
+
+}
+
+
+/* =====================================================
+   WALL COLLISION
+   ===================================================== */
+
+function checkWallCollision(
+    oldX,
+    oldY,
+    newX,
+    newY
+) {
+
+    let radius =
+        ball.radius;
+
+
+    /* Canvas boundary */
+
+    if(
+        newX-radius < 0 ||
+        newX+radius > canvas.width ||
+        newY-radius < 0 ||
+        newY+radius > canvas.height
+    ) {
+
+        ball.vx *= -.4;
+
+        ball.vy *= -.4;
+
+        return true;
+
+    }
+
+
+    let cellX =
+        Math.floor(
+            newX / cellSize
+        );
+
+    let cellY =
+        Math.floor(
+            newY / cellSize
+        );
+
+
+    if(
+        cellX < 0 ||
+        cellY < 0 ||
+        cellX >= mazeSize ||
+        cellY >= mazeSize
+    )
+        return true;
+
+
+    let cell =
+        maze[cellY][cellX];
+
+
+    let left =
+        cellX * cellSize;
+
+    let right =
+        left + cellSize;
+
+    let top =
+        cellY * cellSize;
+
+    let bottom =
+        top + cellSize;
+
+
+    /* LEFT */
+
+    if(
+        cell.walls.left &&
+        newX-radius < left
+    ) {
+
+        ball.vx *= -.5;
+
+        ball.x =
+            left + radius;
+
+        return true;
+
+    }
+
+
+    /* RIGHT */
+
+    if(
+        cell.walls.right &&
+        newX+radius > right
+    ) {
+
+        ball.vx *= -.5;
+
+        ball.x =
+            right-radius;
+
+        return true;
+
+    }
+
+
+    /* TOP */
+
+    if(
+        cell.walls.top &&
+        newY-radius < top
+    ) {
+
+        ball.vy *= -.5;
+
+        ball.y =
+            top + radius;
+
+        return true;
+
+    }
+
+
+    /* BOTTOM */
+
+    if(
+        cell.walls.bottom &&
+        newY+radius > bottom
+    ) {
+
+        ball.vy *= -.5;
+
+        ball.y =
+            bottom-radius;
+
+        return true;
+
+    }
+
+
+    return false;
+
+}
+
+
+/* =====================================================
+   CHECK STARS
+   ===================================================== */
+
+function checkStars() {
+
+    starObjects.forEach(
+        function(star) {
+
+            if(star.collected)
+                return;
+
+
+            let dx =
+                ball.x-star.x;
+
+            let dy =
+                ball.y-star.y;
+
+
+            let distance =
+                Math.sqrt(
+                    dx*dx+
+                    dy*dy
+                );
+
+
+            if(
+                distance <
+                ball.radius+12
+            ) {
+
+                star.collected = true;
+
+                stars++;
+
+                score += 100;
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   CHECK GOAL
+   ===================================================== */
+
+function checkGoal() {
+
+    let dx =
+        ball.x-goal.x;
+
+    let dy =
+        ball.y-goal.y;
+
+
+    let distance =
+        Math.sqrt(
+            dx*dx+
+            dy*dy
+        );
+
+
+    if(
+        distance <
+        ball.radius+
+        goal.radius
+    ) {
+
+        finishLevel();
+
+    }
+
+}
+
+
+/* =====================================================
+   HAZARDS
+   ===================================================== */
+
+function updateHazards(delta) {
+
+    hazards.forEach(
+        function(hazard) {
+
+            hazard.angle +=
+                hazard.speed *
+                delta;
+
+
+            /* Circular movement */
+
+            hazard.x +=
+                Math.cos(
+                    hazard.angle
+                ) *
+                30 *
+                delta;
+
+            hazard.y +=
+                Math.sin(
+                    hazard.angle
+                ) *
+                30 *
+                delta;
+
+
+            /* Collision */
+
+            let dx =
+                ball.x-hazard.x;
+
+            let dy =
+                ball.y-hazard.y;
+
+
+            let distance =
+                Math.sqrt(
+                    dx*dx+
+                    dy*dy
+                );
+
+
+            if(
+                distance <
+                ball.radius+
+                hazard.radius
+            ) {
+
+                loseLife();
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   LOSE LIFE
+   ===================================================== */
+
+function loseLife() {
+
+    lives--;
+
+
+    /* Reset ball */
+
+    ball.x =
+        cellSize/2;
+
+    ball.y =
+        cellSize/2;
+
+    ball.vx = 0;
+
+    ball.vy = 0;
+
+
+    if(lives <= 0) {
+
+        gameRunning = false;
+
+        document.getElementById(
+            "gameOver"
+        ).style.display = "flex";
+
+        document.getElementById(
+            "gameOverText"
+        ).innerText =
+            "You reached Level " +
+            currentLevel +
+            " • Score: " +
+            score;
+
+    }
+
+}
+
+
+/* =====================================================
+   FINISH LEVEL
+   ===================================================== */
+
+function finishLevel() {
+
+    gameRunning = false;
+
+
+    let timeBonus =
+        Math.max(
+            0,
+            1000 -
+            Math.floor(
+                levelTime * 10
+            )
+        );
+
+
+    score +=
+        stars * 200 +
+        timeBonus;
+
+
+    /* Unlock next level */
+
+    if(
+        currentLevel >=
+        unlockedLevel
+    ) {
+
+        unlockedLevel =
+            Math.min(
+                currentLevel+1,
+                30
+            );
+
+        localStorage.setItem(
+            "unlockedLevel",
+            unlockedLevel
+        );
+
+    }
+
+
+    document.getElementById(
+        "completeMenu"
+    ).style.display = "flex";
+
+
+    document.getElementById(
+        "completeStars"
+    ).innerText =
+        "⭐".repeat(stars) +
+        "☆".repeat(3-stars);
+
+
+    document.getElementById(
+        "completeScore"
+    ).innerText =
+        "Score: " +
+        score;
+
+}
+
+
+/* =====================================================
+   NEXT LEVEL
+   ===================================================== */
+
+function nextLevel() {
+
+    document.getElementById(
+        "completeMenu"
+    ).style.display = "none";
+
+
+    if(currentLevel >= 30) {
+
+        currentLevel = 1;
+
+    }
+    else {
+
+        currentLevel++;
+
+    }
+
+
+    loadLevel(currentLevel);
+
+    gameRunning = true;
+
+}
+
+
+/* =====================================================
+   RESTART
+   ===================================================== */
+
+function restartLevel() {
+
+    document.getElementById(
+        "gameOver"
+    ).style.display = "none";
+
+    loadLevel(currentLevel);
+
+    gameRunning = true;
+
+}
+
+
+/* =====================================================
+   LEVEL SELECT
+   ===================================================== */
+
+function openLevels() {
+
+    document.getElementById(
+        "menu"
+    ).style.display = "none";
+
+    document.getElementById(
+        "levelMenu"
+    ).style.display = "flex";
+
+    createLevelButtons();
+
+}
+
+
+function closeLevels() {
+
+    document.getElementById(
+        "levelMenu"
+    ).style.display = "none";
+
+    document.getElementById(
+        "menu"
+    ).style.display = "flex";
+
+}
+
+
+function openLevelsFromGame() {
+
+    document.getElementById(
+        "completeMenu"
+    ).style.display = "none";
+
+    document.getElementById(
+        "levelMenu"
+    ).style.display = "flex";
+
+    createLevelButtons();
+
+}
+
+
+/* =====================================================
+   LEVEL BUTTONS
+   ===================================================== */
+
+function createLevelButtons() {
+
+    let container =
+        document.getElementById(
+            "levels"
+        );
+
+    container.innerHTML = "";
+
+
+    for(let i=1;i<=30;i++) {
+
+        let button =
+            document.createElement(
+                "button"
+            );
+
+
+        button.className =
+            "levelBtn";
+
+
+        if(i <= unlockedLevel) {
+
+            button.classList.add(
+                "unlocked"
+            );
+
+            button.innerHTML =
+                "LEVEL " + i;
+
+
+            button.onclick =
+                function() {
+
+                    currentLevel = i;
+
+                    document.getElementById(
+                        "levelMenu"
+                    ).style.display = "none";
+
+                    loadLevel(i);
+
+                    gameRunning = true;
+
+                };
+
+        }
+        else {
+
+            button.classList.add(
+                "locked"
+            );
+
+            button.innerHTML =
+                "🔒 " + i;
+
+        }
+
+
+        container.appendChild(button);
+
+    }
+
+}
+
+
+/* =====================================================
+   MAIN MENU
+   ===================================================== */
+
+function showMainMenu() {
+
+    document.getElementById(
+        "gameOver"
+    ).style.display = "none";
+
+    document.getElementById(
+        "menu"
+    ).style.display = "flex";
+
+}
+
+
+/* =====================================================
+   UPDATE UI
+   ===================================================== */
+
+function updateUI() {
+
+    document.getElementById(
+        "levelText"
+    ).innerText =
+        currentLevel;
+
+
+    document.getElementById(
+        "starText"
+    ).innerText =
+        stars;
+
+
+    document.getElementById(
+        "lifeText"
+    ).innerText =
+        lives;
+
+
+    document.getElementById(
+        "timeText"
+    ).innerText =
+        Math.floor(levelTime);
+
+}
+
+
+/* =====================================================
+   DRAW MAZE
+   ===================================================== */
+
+function drawMaze() {
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    /* Background */
+
+    ctx.fillStyle =
+        "#0b1728";
+
+    ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    /* Grid */
+
+    for(let y=0;y<mazeSize;y++) {
+
+        for(let x=0;x<mazeSize;x++) {
+
+            let cell =
+                maze[y][x];
+
+
+            /* Floor */
+
+            ctx.fillStyle =
+                (x+y)%2 === 0
+                ? "#14263d"
+                : "#172c45";
+
+
+            ctx.fillRect(
+                x*cellSize,
+                y*cellSize,
+                cellSize,
+                cellSize
+            );
+
+
+            /* Walls */
+
+            ctx.strokeStyle =
+                "#00bfff";
+
+            ctx.lineWidth = 4;
+
+            ctx.beginPath();
+
+
+            if(cell.walls.top) {
+
+                ctx.moveTo(
+                    x*cellSize,
+                    y*cellSize
+                );
+
+                ctx.lineTo(
+                    (x+1)*cellSize,
+                    y*cellSize
+                );
+
+            }
+
+
+            if(cell.walls.right) {
+
+                ctx.moveTo(
+                    (x+1)*cellSize,
+                    y*cellSize
+                );
+
+                ctx.lineTo(
+                    (x+1)*cellSize,
+                    (y+1)*cellSize
+                );
+
+            }
+
+
+            if(cell.walls.bottom) {
+
+                ctx.moveTo(
+                    x*cellSize,
+                    (y+1)*cellSize
+                );
+
+                ctx.lineTo(
+                    (x+1)*cellSize,
+                    (y+1)*cellSize
+                );
+
+            }
+
+
+            if(cell.walls.left) {
+
+                ctx.moveTo(
+                    x*cellSize,
+                    y*cellSize
+                );
+
+                ctx.lineTo(
+                    x*cellSize,
+                    (y+1)*cellSize
+                );
+
+            }
+
+
+            ctx.stroke();
+
+        }
+
+    }
+
+
+    /* Start area */
+
+    ctx.fillStyle =
+        "rgba(0,255,100,.15)";
+
+    ctx.fillRect(
+        0,
+        0,
+        cellSize,
+        cellSize
+    );
+
+
+    /* Goal */
+
+    drawGoal();
+
+
+    /* Stars */
+
+    drawStars();
+
+
+    /* Hazards */
+
+    drawHazards();
+
+
+    /* Ball */
+
+    drawBall();
+
+}
+
+
+/* =====================================================
+   DRAW BALL
+   ===================================================== */
+
+function drawBall() {
+
+    ctx.save();
+
+    ctx.translate(
+        ball.x,
+        ball.y
+    );
+
+
+    /* Shadow */
+
+    ctx.beginPath();
+
+    ctx.arc(
+        4,
+        5,
+        ball.radius,
+        0,
+        Math.PI*2
+    );
+
+    ctx.fillStyle =
+        "rgba(0,0,0,.4)";
+
+    ctx.fill();
+
+
+    /* Ball */
+
+    let gradient =
+        ctx.createRadialGradient(
+            -4,
+            -5,
+            2,
+            0,
+            0,
+            ball.radius
+        );
+
+
+    gradient.addColorStop(
+        0,
+        "#ffffff"
+    );
+
+    gradient.addColorStop(
+        .2,
+        "#4de1ff"
+    );
+
+    gradient.addColorStop(
+        1,
+        "#0066ff"
+    );
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+        0,
+        0,
+        ball.radius,
+        0,
+        Math.PI*2
+    );
+
+    ctx.fillStyle =
+        gradient;
+
+    ctx.fill();
+
+
+    /* Rolling line */
+
+    ctx.rotate(
+        ball.rotation
+    );
+
+    ctx.strokeStyle =
+        "rgba(255,255,255,.7)";
+
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        -8,
+        0
+    );
+
+    ctx.lineTo(
+        8,
+        0
+    );
+
+    ctx.stroke();
+
+
+    ctx.restore();
+
+}
+
+
+/* =====================================================
+   DRAW STARS
+   ===================================================== */
+
+function drawStars() {
+
+    starObjects.forEach(
+        function(star) {
+
+            if(star.collected)
+                return;
+
+
+            star.rotation +=
+                .04;
+
+
+            ctx.save();
+
+
+            ctx.translate(
+                star.x,
+                star.y
+            );
+
+
+            ctx.rotate(
+                star.rotation
+            );
+
+
+            ctx.fillStyle =
+                "#ffd000";
+
+            ctx.shadowColor =
+                "#ffae00";
+
+            ctx.shadowBlur = 15;
+
+
+            drawStarShape(
+                0,
+                0,
+                13,
+                6
+            );
+
+
+            ctx.restore();
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   STAR SHAPE
+   ===================================================== */
+
+function drawStarShape(
+    cx,
+    cy,
+    outer,
+    inner
+) {
+
+    ctx.beginPath();
+
+
+    for(let i=0;i<10;i++) {
+
+        let angle =
+            -Math.PI/2 +
+            i*Math.PI/5;
+
+
+        let radius =
+            i%2 === 0
+            ? outer
+            : inner;
+
+
+        let x =
+            cx +
+            Math.cos(angle)
+            * radius;
+
+        let y =
+            cy +
+            Math.sin(angle)
+            * radius;
+
+
+        if(i===0)
+            ctx.moveTo(x,y);
+        else
+            ctx.lineTo(x,y);
+
+    }
+
+
+    ctx.closePath();
+
+    ctx.fill();
+
+}
+
+
+/* =====================================================
+   DRAW GOAL
+   ===================================================== */
+
+function drawGoal() {
+
+    ctx.save();
+
+    ctx.translate(
+        goal.x,
+        goal.y
+    );
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+        0,
+        0,
+        goal.radius,
+        0,
+        Math.PI*2
+    );
+
+    ctx.fillStyle =
+        "rgba(0,255,80,.2)";
+
+    ctx.fill();
+
+
+    ctx.strokeStyle =
+        "#00ff66";
+
+    ctx.lineWidth = 4;
+
+    ctx.stroke();
+
+
+    /* Flag */
+
+    ctx.fillStyle =
+        "#ff304f";
+
+    ctx.fillRect(
+        -2,
+        -25,
+        3,
+        25
+    );
+
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        0,
+        -25
+    );
+
+    ctx.lineTo(
+        18,
+        -20
+    );
+
+    ctx.lineTo(
+        0,
+        -14
+    );
+
+    ctx.closePath();
+
+    ctx.fill();
+
+
+    ctx.restore();
+
+}
+
+
+/* =====================================================
+   DRAW HAZARDS
+   ===================================================== */
+
+function drawHazards() {
+
+    hazards.forEach(
+        function(hazard) {
+
+            ctx.save();
+
+            ctx.translate(
+                hazard.x,
+                hazard.y
+            );
+
+
+            ctx.rotate(
+                hazard.angle
+            );
+
+
+            ctx.fillStyle =
+                "#ff1744";
+
+            ctx.shadowColor =
+                "red";
+
+            ctx.shadowBlur = 12;
+
+
+            /* Spinner */
+
+            ctx.fillRect(
+                -25,
+                -4,
+                50,
+                8
+            );
+
+
+            ctx.rotate(
+                Math.PI/2
+            );
+
+
+            ctx.fillRect(
+                -25,
+                -4,
+                50,
+                8
+            );
+
+
+            ctx.beginPath();
+
+            ctx.arc(
+                0,
+                0,
+                7,
+                0,
+                Math.PI*2
+            );
+
+            ctx.fillStyle =
+                "#ffffff";
+
+            ctx.fill();
+
+
+            ctx.restore();
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   GAME LOOP
+   ===================================================== */
+
+function gameLoop(timestamp) {
+
+    let delta =
+        (timestamp-lastTime)/1000;
+
+
+    lastTime = timestamp;
+
+
+    if(delta > .05)
+        delta = .05;
+
+
+    update(delta);
+
+    drawMaze();
+
+
+    requestAnimationFrame(
+        gameLoop
+    );
+
+}
+
+
+/* =====================================================
+   INITIALIZE
+   ===================================================== */
+
+resizeCanvas();
+
+loadLevel(1);
+
+gameRunning = false;
+
+document.getElementById(
+    "menu"
+).style.display = "flex";
+
+
+requestAnimationFrame(
+    gameLoop
+);
+
+</script>
+
+</body>
+</html>
